@@ -31,7 +31,6 @@ class Crowler:
         self.checked = ""
         self.apobj = apprise.Apprise()
         self.notifires = os.getenv("NOTIFIERS")
-        self.set_notifires()
         self.config_path = 'config/config.yaml'
         self.get_kids()
 
@@ -48,7 +47,7 @@ class Crowler:
         self.browser = webdriver.Chrome(executable_path=ChromeDriverManager(version='106.0.5249.61').install(), options=self.options)
 
 
-    def set_notifires(self):
+    def init_notifires(self):
             if len(self.notifires)!=0:
                 logger.debug("Setting Apprise notification channels")
                 jobs=self.notifires.split()
@@ -117,7 +116,7 @@ class Crowler:
 
 def main():
     try:
-        crowler = Crowler()
+
         for kid in crowler.kids['kids']:
             if not kid['username'] or not kid['password'] or not kid['name']:
                 logger.warning("Kids list is empry or not configured")
@@ -136,6 +135,8 @@ def main():
 
 if __name__ == "__main__":
     try:
+        crowler = Crowler()
+        crowler.init_notifires()
         if not SCHEDULES:
             logger.debug("Setting default schedule to 16:00")
             schedule.every().day.at("16:00").do(main)
