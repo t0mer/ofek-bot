@@ -4,6 +4,7 @@ import shutil
 import os
 import schedule
 import time
+import re
 from os import path
 from loguru import logger
 from selenium import webdriver
@@ -119,19 +120,25 @@ def main():
 
         for kid in crowler.kids['kids']:
             if not kid['username'] or not kid['password'] or not kid['name']:
-                logger.warning("Kids list is empry or not configured")
+                logger.warning("Kids list is empty or not configured")
                 break
             logger.info("Getting tasks for: " + kid["name"])
             crowler.init_browser()
             crowler.crowl(str(kid['username']),str(kid['password']))
             title = "מצב משימות אופק של " + kid['name']
             message = crowler.todo + "\n" + crowler.tofix + "\n" + crowler.checked + "\n" + crowler.wating
-            crowler.send_notification(title,message)
+            if has_tasks(crowler.todo,crowler.tofix):
+                crowler.send_notification(title,message)
             logger.debug("Closing browser")
             crowler.browser.quit()
     except Exception as e:
         logger.error(str(e))
 
+
+def has_tasks(todo,tofix):
+    todo_tasks = re.findall(r'\d+', todo)
+    tofix_tasks = re.findall(r'\d+', tofix)
+    return (int(todo_tasks[0]) > 0 or int(tofix_tasks[0]) > 0)
 
 if __name__ == "__main__":
     try:
@@ -144,7 +151,6 @@ if __name__ == "__main__":
             for _schedule in SCHEDULES.split(','):
                 logger.debug("Setting schedule to everyday at " + _schedule)
                 schedule.every().day.at(_schedule).do(main)
-        
         while True:
             schedule.run_pending()
             time.sleep(1)
