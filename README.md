@@ -80,3 +80,41 @@ The table below identifies the services this tool supports and some example serv
 | [XMPP](https://github.com/caronc/apprise/wiki/Notify_xmpp) | xmpp:// or xmpps://    | (TCP) 5222 or 5223   | xmpp://user:password@hostname<br />xmpps://user:password@hostname:port?jid=user@hostname/resource<br/>xmpps://user:password@hostname/target@myhost, target2@myhost/resource
 | [Webex Teams (Cisco)](https://github.com/caronc/apprise/wiki/Notify_wxteams) | wxteams://  | (TCP) 443   | wxteams://Token
 | [Zulip Chat](https://github.com/caronc/apprise/wiki/Notify_zulip) | zulip://  | (TCP) 443   | zulip://botname@Organization/Token<br />zulip://botname@Organization/Token/Stream<br />zulip://botname@Organization/Token/Email
+
+
+## Installation
+Certi is a docker based application that can be installed using docker compose:
+```
+version: "3.6"
+services:
+  ofek:
+    image: techblog/ofek-bot
+    container_name: ofek
+    restart: always
+    environment:
+      - SCHEDULES=
+      - NOTIFIERS=
+    volumes:
+      - ./ofek-bot/config:/app/config
+```
+
+### Environment
+* SCHEDULES - Set checks schedules times splited with "," (14:00,15:30) - default is set to 16:00.
+* NOTIFIERS - List of [Supported Notifications](#Supported-Notifications)
+
+
+### Volumes
+Ofek-bot is using the kids login credentials to the ofek website.
+In the config folder there is a config.yaml files for saving the credentials.
+Make sure to create the config file in the following structure:
+
+```
+kids:
+  - name: 
+    username: 
+    password: 
+
+  - name: 
+    username: 
+    password: 
+```
