@@ -1,9 +1,9 @@
 # Ofek-bot
-Ofek-bot is a python based  bot that scarps the Ofek (EDU) web site and alerts me when the kids has tasks to complete.
+Ofek-bot is a python based  bot that scraps the Ofek (EDU) web site and alerts me when the kids has tasks to complete.
 
 ## Features
  - Monitor kids tasks status
- - Schedule whem to run.
+ - Schedule when to run.
  - Support many notification channels (Thanks to [Apprise](https://github.com/caronc/apprise))
 
 

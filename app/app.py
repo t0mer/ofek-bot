@@ -18,7 +18,7 @@ from selenium.webdriver.chrome.options import Options
 
 SCHEDULES=os.getenv("SCHEDULES")
 
-class Crowler:
+class Crawler:
     def __init__(self):
         self.kids = []
         self.delay = 5
@@ -118,19 +118,19 @@ class Crowler:
 def main():
     try:
 
-        for kid in crowler.kids['kids']:
+        for kid in crawler.kids['kids']:
             if not kid['username'] or not kid['password'] or not kid['name']:
                 logger.warning("Kids list is empty or not configured")
                 break
             logger.info("Getting tasks for: " + kid["name"])
-            crowler.init_browser()
-            crowler.crowl(str(kid['username']),str(kid['password']))
+            crawler.init_browser()
+            crawler.crowl(str(kid['username']),str(kid['password']))
             title = "מצב משימות אופק של " + kid['name']
-            message = crowler.todo + "\n" + crowler.tofix + "\n" + crowler.checked + "\n" + crowler.wating
-            if has_tasks(crowler.todo,crowler.tofix):
-                crowler.send_notification(title,message)
+            message = crawler.todo + "\n" + crawler.tofix + "\n" + crawler.checked + "\n" + crawler.wating
+            if has_tasks(crawler.todo,crawler.tofix):
+                crawler.send_notification(title,message)
             logger.debug("Closing browser")
-            crowler.browser.quit()
+            crawler.browser.quit()
     except Exception as e:
         logger.error(str(e))
 
@@ -142,8 +142,8 @@ def has_tasks(todo,tofix):
 
 if __name__ == "__main__":
     try:
-        crowler = Crowler()
-        crowler.init_notifires()
+        crawler = Crawler()
+        crawler.init_notifires()
         if not SCHEDULES:
             logger.debug("Setting default schedule to 16:00")
             schedule.every().day.at("16:00").do(main)
