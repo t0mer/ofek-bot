@@ -90,7 +90,7 @@ class Crawler:
             WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'//*[@id="header-toolbar_login-button"]'))).click()
 
             # Click edu.gov.il SSO buttin
-            WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located((By.CLASS_NAME, "LoginContainer_login_btn_text__3MbPq"))).click()
+            WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[1]/div[3]/div[2]/div/div/div/div[2]/div/div[1]/div'))).click()
           
             # Change to User/Pass auth type
             self.browser.get(self.browser.current_url.replace('EduCombinedAuthSms','EduCombinedAuthUidPwd'))
