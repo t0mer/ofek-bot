@@ -87,10 +87,12 @@ class Crawler:
             self.browser.get(self.ofek_url)
             
             # Click the login button
-            WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'//*[@id="header-toolbar_login-button"]'))).click()
-
-            # Click edu.gov.il SSO buttin
-            WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[1]/div[3]/div[2]/div/div/div/div[2]/div/div[1]/div'))).click()
+            logger.debug("Click the login button")
+            WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/header/div[1]/div[1]/button'))).click()
+            
+            # Click edu.gov.il SSO button
+            logger.debug("Click edu.gov.il SSO button")
+            WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/header/div[1]/div[1]/div/div/dialog/div/section/div/div/button/div'))).click()
           
             # Change to User/Pass auth type
             self.browser.get(self.browser.current_url.replace('EduCombinedAuthSms','EduCombinedAuthUidPwd'))
@@ -106,10 +108,10 @@ class Crawler:
 
             # Scrap tasks status
             logger.info("Scrapping...")
-            self.todo = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[3]/div[2]/div[1]/div[1]/div[1]/span'))).text
-            self.tofix = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[3]/div[2]/div[1]/div[2]/div/span'))).text
-            self.checked = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[3]/div[2]/div[1]/div[3]/div/span'))).text
-            self.wating = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[3]/div[2]/div[1]/div[4]/div/span'))).text
+            self.todo = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[1]/div/span'))).text
+            self.tofix = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[2]/div/span'))).text
+            self.checked = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[3]/div/span'))).text
+            self.wating = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[4]/div/span'))).text
 
         except Exception as e:
             logger.error(e)
@@ -129,6 +131,8 @@ def main():
             message = crawler.todo + "\n" + crawler.tofix + "\n" + crawler.checked + "\n" + crawler.wating
             if has_tasks(crawler.todo,crawler.tofix):
                 crawler.send_notification(title,message)
+            else:
+                logger.info("No tasks tbd for " + kid['name'])
             logger.debug("Closing browser")
             crawler.browser.quit()
     except Exception as e:
