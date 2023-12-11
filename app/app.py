@@ -149,16 +149,15 @@ if __name__ == "__main__":
     try:
         crawler = Crawler()
         crawler.init_notifires()
-        main()
-        # if not SCHEDULES:
-        #     logger.debug("Setting default schedule to 16:00")
-        #     schedule.every().day.at("16:00").do(main)
-        # else:
-        #     for _schedule in SCHEDULES.split(','):
-        #         logger.debug("Setting schedule to everyday at " + _schedule)
-        #         schedule.every().day.at(_schedule).do(main)
-        # while True:
-        #     schedule.run_pending()
-        #     time.sleep(1)
+        if not SCHEDULES:
+            logger.debug("Setting default schedule to 16:00")
+            schedule.every().day.at("16:00").do(main)
+        else:
+            for _schedule in SCHEDULES.split(','):
+                logger.debug("Setting schedule to everyday at " + _schedule)
+                schedule.every().day.at(_schedule).do(main)
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
     except Exception as e:
         logger.error(str(e))
