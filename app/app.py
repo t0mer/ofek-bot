@@ -15,6 +15,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import InvalidSessionIdException
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 SCHEDULES=os.getenv("SCHEDULES")
 
@@ -45,7 +46,7 @@ class Crawler:
         self.options.add_argument("--no-sandbox")
         self.options.add_argument('--start-maximized')
         self.options.add_argument("--disable-dev-shm-usage")
-        self.browser = webdriver.Chrome(executable_path=ChromeDriverManager(version='106.0.5249.61').install(), options=self.options)
+        self.browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=self.options)
 
 
     def init_notifires(self):
@@ -148,15 +149,16 @@ if __name__ == "__main__":
     try:
         crawler = Crawler()
         crawler.init_notifires()
-        if not SCHEDULES:
-            logger.debug("Setting default schedule to 16:00")
-            schedule.every().day.at("16:00").do(main)
-        else:
-            for _schedule in SCHEDULES.split(','):
-                logger.debug("Setting schedule to everyday at " + _schedule)
-                schedule.every().day.at(_schedule).do(main)
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
+        main()
+        # if not SCHEDULES:
+        #     logger.debug("Setting default schedule to 16:00")
+        #     schedule.every().day.at("16:00").do(main)
+        # else:
+        #     for _schedule in SCHEDULES.split(','):
+        #         logger.debug("Setting schedule to everyday at " + _schedule)
+        #         schedule.every().day.at(_schedule).do(main)
+        # while True:
+        #     schedule.run_pending()
+        #     time.sleep(1)
     except Exception as e:
         logger.error(str(e))
