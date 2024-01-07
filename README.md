@@ -83,7 +83,7 @@ The table below identifies the services this tool supports and some example serv
 
 
 ## Installation
-Certi is a docker based application that can be installed using docker compose:
+Ofek-bot is a docker based application that can be installed using docker compose:
 ```
 version: "3.6"
 services:
