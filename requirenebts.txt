@@ -1,0 +1,4 @@
+schedule
+loguru
+pyyaml
+apprise

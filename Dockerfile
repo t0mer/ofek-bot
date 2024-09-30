@@ -12,10 +12,11 @@ RUN apt -yqq install python3-pip && \
     apt -yqq install libssl-dev
 
 RUN  pip3 install --upgrade pip --no-cache-dir && \
-     pip3 install --upgrade setuptools --no-cache-dir && \
-     pip3 install schedule --no-cache-dir && \
-     pip3 install loguru --no-cache-dir && \
-     pip3 install apprise --no-cache-dir
+     pip3 install --upgrade setuptools --no-cache-dir
+
+COPY requirenebts.txt /tmp
+
+RUN pip3 install -r /tmp/requirenebts.txt
      
 RUN mkdir -p /app/config
 
