@@ -109,11 +109,10 @@ class Crawler:
 
             # Scrap tasks status
             logger.info("Scrapping...")
-            self.todo = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[1]/div/span'))).text
-            self.tofix = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[2]/div/span'))).text
-            self.checked = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[3]/div/span'))).text
-            self.wating = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[1]/div/div/div[2]/div/div[3]/div[2]/div[1]/div[4]/div/span'))).text
-
+            self.todo = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[2]/main/div[3]/div[2]/div[1]/div[1]/div[1]/span'))).text
+            self.tofix = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[2]/main/div[3]/div[2]/div[1]/div[2]/div/span'))).text
+            self.checked = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[2]/main/div[3]/div[2]/div[1]/div[3]/div/span'))).text
+            self.wating = WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located(("xpath",'/html/body/div[2]/div/div/div[2]/main/div[3]/div[2]/div[1]/div[4]/div/span'))).text
         except Exception as e:
             logger.error(e)
 
