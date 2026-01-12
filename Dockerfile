@@ -1,3 +1,10 @@
+# Using official Selenium standalone-chrome image with pinned version for reproducibility
+# This image includes:
+# - Chrome 143.0
+# - ChromeDriver 143.0
+# - Selenium Grid 4.39.0
+# - Ubuntu 24.04 LTS
+# - Python 3.14.2 with pip
 FROM selenium/standalone-chrome:143.0-chromedriver-143.0-grid-4.39.0-20251212
 LABEL maintainer="tomer.klein@gmail.com"
 
