@@ -1,27 +1,37 @@
-FROM techblog/selenium:latest
+FROM selenium/standalone-chrome:143.0-20251212
 LABEL maintainer="tomer.klein@gmail.com"
 
-ENV PYTHONIOENCODING utf-8
-ENV LANG C.UTF-8
-ENV NOTIFIERS ""
-ENV SCHEDULES ""
-RUN apt update -yqq
+# Switch to root to install dependencies
+USER root
 
-RUN apt -yqq install python3-pip && \
-    apt -yqq install libffi-dev && \
-    apt -yqq install libssl-dev
+ENV PYTHONIOENCODING=utf-8
+ENV LANG=C.UTF-8
+ENV NOTIFIERS=""
+ENV SCHEDULES=""
 
-RUN  pip3 install --upgrade pip --no-cache-dir && \
-     pip3 install --upgrade setuptools --no-cache-dir
+# Install required system dependencies
+RUN apt-get update -yqq && \
+    apt-get install -yqq python3-pip libffi-dev libssl-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY requirenebts.txt /tmp
+# Copy and install Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt --no-cache-dir && \
+    rm /tmp/requirements.txt
 
-RUN pip3 install -r /tmp/requirenebts.txt
-     
+# Create app directory
 RUN mkdir -p /app/config
 
-COPY app /app
+# Copy application files
+COPY app /app/
+
+# Ensure correct permissions for non-root user
+RUN chown -R seluser:seluser /app
+
+# Switch back to non-root user for security
+USER seluser
 
 WORKDIR /app
- 
-ENTRYPOINT python /app/app.py
+
+ENTRYPOINT ["python3", "/app/app.py"]
