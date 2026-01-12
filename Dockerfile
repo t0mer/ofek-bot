@@ -16,8 +16,9 @@ RUN apt-get update -yqq && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies
-COPY requirements.txt /tmp/
-RUN pip3 install -r /tmp/requirements.txt --no-cache-dir
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt --no-cache-dir && \
+    rm /tmp/requirements.txt
 
 # Create app directory
 RUN mkdir -p /app/config
