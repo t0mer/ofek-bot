@@ -19,19 +19,18 @@ RUN apt-get update -yqq && \
 COPY requirements.txt /tmp/
 RUN pip3 install -r /tmp/requirements.txt --no-cache-dir
 
-# Create app directory and set permissions
-RUN mkdir -p /app/config && \
-    chown -R seluser:seluser /app
+# Create app directory
+RUN mkdir -p /app/config
 
 # Copy application files
 COPY app /app/
 
-# Ensure correct permissions
+# Ensure correct permissions for non-root user
 RUN chown -R seluser:seluser /app
 
 # Switch back to non-root user for security
 USER seluser
 
 WORKDIR /app
- 
+
 ENTRYPOINT ["python3", "/app/app.py"]
