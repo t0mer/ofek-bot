@@ -1,120 +1,358 @@
 # Ofek-bot
-Ofek-bot is a python based  bot that scraps the Ofek (EDU) web site and alerts me when the kids has tasks to complete.
+
+Ofek-bot is a Python bot that logs in to the **Ofek** learning website by CET, used in Israeli
+schools ([myofek.cet.ac.il](https://myofek.cet.ac.il/he)), on behalf of each of your kids.
+It signs in through the Ministry of Education's SSO (edu.gov.il), reads their task counters, and sends you a notification through
+[Apprise](https://github.com/caronc/apprise) when a kid has tasks to complete or fix. It runs
+on a daily schedule inside a Docker container with a headless Chrome browser driven by
+Selenium.
+
+> [!IMPORTANT]
+> **Unofficial project.** Ofek-bot is not affiliated with, endorsed by, or supported by Ofek,
+> CET, the Israeli Ministry of Education, or any school. It automates a normal browser login
+> with credentials you provide. You are responsible for making sure your use complies with the
+> website's terms of use and your school's policies.
+
+## Table of contents
+
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Notifications](#notifications)
+- [Logging](#logging)
+- [Troubleshooting](#troubleshooting)
+- [Security and privacy](#security-and-privacy)
+- [Known issues and limitations](#known-issues-and-limitations)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
- - Monitor kids tasks status
- - Schedule when to run.
- - Support many notification channels (Thanks to [Apprise](https://github.com/caronc/apprise))
 
+- Monitors the Ofek task status of any number of kids, each with their own login.
+- Logs in through the edu.gov.il SSO using the username/password option.
+- Reads four counters from the Ofek dashboard: tasks to do, tasks to fix, checked tasks, and
+  tasks waiting for review.
+- Notifies only when there is something to do (the "to do" or "to fix" counter is above zero).
+- Runs on one or more daily schedules (default: 16:00).
+- Supports many notification channels (Telegram, Discord, Slack, email, Pushover, Home
+  Assistant, and more), thanks to [Apprise](https://github.com/caronc/apprise).
 
-## Components and Frameworks used in Ofek-bot
-* [Loguru](https://pypi.org/project/loguru/) For logging.
-* [Schedule](https://pypi.org/project/schedule/) For alerts schedule.
-* [Apprise](https://github.com/caronc/apprise) For notifications.
-* [Selenium](https://selenium-python.readthedocs.io/) For data scrapping.
+### Components and frameworks
 
-## Supported Notifications
-The section identifies all of the services supported by this library. [Check out the wiki for more information on the supported modules here](https://github.com/caronc/apprise/wiki).
+- [Loguru](https://pypi.org/project/loguru/) for logging.
+- [Schedule](https://pypi.org/project/schedule/) for the run schedule.
+- [Apprise](https://github.com/caronc/apprise) for notifications.
+- [Selenium](https://selenium-python.readthedocs.io/) and
+  [webdriver-manager](https://pypi.org/project/webdriver-manager/) for browser automation.
+- [PyYAML](https://pypi.org/project/PyYAML/) for the configuration file.
 
-### Popular Notification Services
-The table below identifies the services this tool supports and some example service urls you need to use in order to take advantage of it. Click on any of the services listed below to get more details on how you can configure Apprise to access them.
+## How it works
 
-| Notification Service | Service ID | Default Port | Example Syntax |
-| -------------------- | ---------- | ------------ | -------------- |
-| [Apprise API](https://github.com/caronc/apprise/wiki/Notify_apprise_api)  | apprise:// or apprises:// | (TCP) 80 or 443 | apprise://hostname/Token
-| [AWS SES](https://github.com/caronc/apprise/wiki/Notify_ses)  | ses://   | (TCP) 443   | ses://user@domain/AccessKeyID/AccessSecretKey/RegionName<br/>ses://user@domain/AccessKeyID/AccessSecretKey/RegionName/email1/email2/emailN
-| [Boxcar](https://github.com/caronc/apprise/wiki/Notify_boxcar)  | boxcar://   | (TCP) 443   | boxcar://hostname<br />boxcar://hostname/@tag<br/>boxcar://hostname/device_token<br />boxcar://hostname/device_token1/device_token2/device_tokenN<br />boxcar://hostname/@tag/@tag2/device_token
-| [Discord](https://github.com/caronc/apprise/wiki/Notify_discord)  | discord://   | (TCP) 443   | discord://webhook_id/webhook_token<br />discord://avatar@webhook_id/webhook_token
-| [Emby](https://github.com/caronc/apprise/wiki/Notify_emby)  | emby:// or embys:// | (TCP) 8096 | emby://user@hostname/<br />emby://user:password@hostname
-| [Enigma2](https://github.com/caronc/apprise/wiki/Notify_enigma2)  | enigma2:// or enigma2s:// | (TCP) 80 or 443 | enigma2://hostname
-| [Faast](https://github.com/caronc/apprise/wiki/Notify_faast) | faast://    | (TCP) 443    | faast://authorizationtoken
-| [FCM](https://github.com/caronc/apprise/wiki/Notify_fcm) | fcm://    | (TCP) 443    | fcm://project@apikey/DEVICE_ID<br />fcm://project@apikey/#TOPIC<br/>fcm://project@apikey/DEVICE_ID1/#topic1/#topic2/DEVICE_ID2/
-| [Flock](https://github.com/caronc/apprise/wiki/Notify_flock) | flock://    | (TCP) 443    | flock://token<br/>flock://botname@token<br/>flock://app_token/u:userid<br/>flock://app_token/g:channel_id<br/>flock://app_token/u:userid/g:channel_id
-| [Gitter](https://github.com/caronc/apprise/wiki/Notify_gitter) | gitter://    | (TCP) 443    | gitter://token/room<br/>gitter://token/room1/room2/roomN
-| [Google Chat](https://github.com/caronc/apprise/wiki/Notify_googlechat) | gchat://    | (TCP) 443    | gchat://workspace/key/token
-| [Gotify](https://github.com/caronc/apprise/wiki/Notify_gotify) | gotify:// or gotifys://   | (TCP) 80 or 443    | gotify://hostname/token<br />gotifys://hostname/token?priority=high
-| [Growl](https://github.com/caronc/apprise/wiki/Notify_growl)  | growl://   | (UDP) 23053   | growl://hostname<br />growl://hostname:portno<br />growl://password@hostname<br />growl://password@hostname:port</br>**Note**: you can also use the get parameter _version_ which can allow the growl request to behave using the older v1.x protocol. An example would look like: growl://hostname?version=1
-| [Home Assistant](https://github.com/caronc/apprise/wiki/Notify_homeassistant)       | hassio:// or hassios://   | (TCP) 8123 or 443 | hassio://hostname/accesstoken<br />hassio://user@hostname/accesstoken<br />hassio://user:password@hostname:port/accesstoken<br />hassio://hostname/optional/path/accesstoken
-| [IFTTT](https://github.com/caronc/apprise/wiki/Notify_ifttt) | ifttt://    | (TCP) 443    | ifttt://webhooksID/Event<br />ifttt://webhooksID/Event1/Event2/EventN<br/>ifttt://webhooksID/Event1/?+Key=Value<br/>ifttt://webhooksID/Event1/?-Key=value1
-| [Join](https://github.com/caronc/apprise/wiki/Notify_join) | join://   | (TCP) 443    | join://apikey/device<br />join://apikey/device1/device2/deviceN/<br />join://apikey/group<br />join://apikey/groupA/groupB/groupN<br />join://apikey/DeviceA/groupA/groupN/DeviceN/
-| [KODI](https://github.com/caronc/apprise/wiki/Notify_kodi) | kodi:// or kodis://    | (TCP) 8080 or 443   | kodi://hostname<br />kodi://user@hostname<br />kodi://user:password@hostname:port
-| [Kumulos](https://github.com/caronc/apprise/wiki/Notify_kumulos) | kumulos:// | (TCP) 443 | kumulos://apikey/serverkey
-| [LaMetric Time](https://github.com/caronc/apprise/wiki/Notify_lametric) | lametric:// | (TCP) 443 | lametric://apikey@device_ipaddr<br/>lametric://apikey@hostname:port<br/>lametric://client_id@client_secret
-| [Mailgun](https://github.com/caronc/apprise/wiki/Notify_mailgun) | mailgun:// | (TCP) 443 | mailgun://user@hostname/apikey<br />mailgun://user@hostname/apikey/email<br />mailgun://user@hostname/apikey/email1/email2/emailN<br />mailgun://user@hostname/apikey/?name="From%20User"
-| [Matrix](https://github.com/caronc/apprise/wiki/Notify_matrix) | matrix:// or matrixs://  | (TCP) 80 or 443 | matrix://hostname<br />matrix://user@hostname<br />matrixs://user:pass@hostname:port/#room_alias<br />matrixs://user:pass@hostname:port/!room_id<br />matrixs://user:pass@hostname:port/#room_alias/!room_id/#room2<br />matrixs://token@hostname:port/?webhook=matrix<br />matrix://user:token@hostname/?webhook=slack&format=markdown
-| [Mattermost](https://github.com/caronc/apprise/wiki/Notify_mattermost) | mmost:// or mmosts:// | (TCP) 8065 | mmost://hostname/authkey<br />mmost://hostname:80/authkey<br />mmost://user@hostname:80/authkey<br />mmost://hostname/authkey?channel=channel<br />mmosts://hostname/authkey<br />mmosts://user@hostname/authkey<br />
-| [Microsoft Teams](https://github.com/caronc/apprise/wiki/Notify_msteams) | msteams://  | (TCP) 443   | msteams://TokenA/TokenB/TokenC/
-| [MQTT](https://github.com/caronc/apprise/wiki/Notify_mqtt) | mqtt://  or mqtts:// | (TCP) 1883 or 8883   | mqtt://hostname/topic<br />mqtt://user@hostname/topic<br />mqtts://user:pass@hostname:9883/topic
-| [Nextcloud](https://github.com/caronc/apprise/wiki/Notify_nextcloud) | ncloud:// or nclouds:// | (TCP) 80 or 443 | ncloud://adminuser:pass@host/User<br/>nclouds://adminuser:pass@host/User1/User2/UserN
-| [NextcloudTalk](https://github.com/caronc/apprise/wiki/Notify_nextcloudtalk) | nctalk:// or nctalks:// | (TCP) 80 or 443 | nctalk://user:pass@host/RoomId<br/>nctalks://user:pass@host/RoomId1/RoomId2/RoomIdN
-| [Notica](https://github.com/caronc/apprise/wiki/Notify_notica) | notica://  | (TCP) 443   | notica://Token/
-| [Notifico](https://github.com/caronc/apprise/wiki/Notify_notifico) | notifico://  | (TCP) 443   | notifico://ProjectID/MessageHook/
-| [Office 365](https://github.com/caronc/apprise/wiki/Notify_office365) | o365://  | (TCP) 443   | o365://TenantID:AccountEmail/ClientID/ClientSecret<br />o365://TenantID:AccountEmail/ClientID/ClientSecret/TargetEmail<br />o365://TenantID:AccountEmail/ClientID/ClientSecret/TargetEmail1/TargetEmail2/TargetEmailN
-| [OneSignal](https://github.com/caronc/apprise/wiki/Notify_onesignal) | onesignal:// | (TCP) 443 | onesignal://AppID@APIKey/PlayerID<br/>onesignal://TemplateID:AppID@APIKey/UserID<br/>onesignal://AppID@APIKey/#IncludeSegment<br/>onesignal://AppID@APIKey/Email
-| [Opsgenie](https://github.com/caronc/apprise/wiki/Notify_opsgenie) | opsgenie:// | (TCP) 443 | opsgenie://APIKey<br/>opsgenie://APIKey/UserID<br/>opsgenie://APIKey/#Team<br/>opsgenie://APIKey/\*Schedule<br/>opsgenie://APIKey/^Escalation
-| [ParsePlatform](https://github.com/caronc/apprise/wiki/Notify_parseplatform) | parsep:// or parseps:// | (TCP) 80 or 443 | parsep://AppID:MasterKey@Hostname<br/>parseps://AppID:MasterKey@Hostname
-| [PopcornNotify](https://github.com/caronc/apprise/wiki/Notify_popcornnotify) | popcorn://  | (TCP) 443   | popcorn://ApiKey/ToPhoneNo<br/>popcorn://ApiKey/ToPhoneNo1/ToPhoneNo2/ToPhoneNoN/<br/>popcorn://ApiKey/ToEmail<br/>popcorn://ApiKey/ToEmail1/ToEmail2/ToEmailN/<br/>popcorn://ApiKey/ToPhoneNo1/ToEmail1/ToPhoneNoN/ToEmailN
-| [Prowl](https://github.com/caronc/apprise/wiki/Notify_prowl) | prowl://   | (TCP) 443    | prowl://apikey<br />prowl://apikey/providerkey
-| [PushBullet](https://github.com/caronc/apprise/wiki/Notify_pushbullet) | pbul://    | (TCP) 443    | pbul://accesstoken<br />pbul://accesstoken/#channel<br/>pbul://accesstoken/A_DEVICE_ID<br />pbul://accesstoken/email@address.com<br />pbul://accesstoken/#channel/#channel2/email@address.net/DEVICE
-| [Pushjet](https://github.com/caronc/apprise/wiki/Notify_pushjet) | pjet:// or pjets:// | (TCP) 80 or 443 | pjet://hostname/secret<br />pjet://hostname:port/secret<br />pjets://secret@hostname/secret<br />pjets://hostname:port/secret
-| [Push (Techulus)](https://github.com/caronc/apprise/wiki/Notify_techulus) | push://    | (TCP) 443    | push://apikey/
-| [Pushed](https://github.com/caronc/apprise/wiki/Notify_pushed) | pushed://    | (TCP) 443    | pushed://appkey/appsecret/<br/>pushed://appkey/appsecret/#ChannelAlias<br/>pushed://appkey/appsecret/#ChannelAlias1/#ChannelAlias2/#ChannelAliasN<br/>pushed://appkey/appsecret/@UserPushedID<br/>pushed://appkey/appsecret/@UserPushedID1/@UserPushedID2/@UserPushedIDN
-| [Pushover](https://github.com/caronc/apprise/wiki/Notify_pushover)  | pover://   | (TCP) 443   | pover://user@token<br />pover://user@token/DEVICE<br />pover://user@token/DEVICE1/DEVICE2/DEVICEN<br />**Note**: you must specify both your user_id and token
-| [PushSafer](https://github.com/caronc/apprise/wiki/Notify_pushsafer)  | psafer:// or psafers://  | (TCP) 80 or 443  | psafer://privatekey<br />psafers://privatekey/DEVICE<br />psafer://privatekey/DEVICE1/DEVICE2/DEVICEN
-| [Reddit](https://github.com/caronc/apprise/wiki/Notify_reddit) | reddit:// | (TCP) 443   | reddit://user:password@app_id/app_secret/subreddit<br />reddit://user:password@app_id/app_secret/sub1/sub2/subN
-| [Rocket.Chat](https://github.com/caronc/apprise/wiki/Notify_rocketchat) | rocket:// or rockets://  | (TCP) 80 or 443   | rocket://user:password@hostname/RoomID/Channel<br />rockets://user:password@hostname:443/#Channel1/#Channel1/RoomID<br />rocket://user:password@hostname/#Channel<br />rocket://webhook@hostname<br />rockets://webhook@hostname/@User/#Channel
-| [Ryver](https://github.com/caronc/apprise/wiki/Notify_ryver) | ryver://  | (TCP) 443   | ryver://Organization/Token<br />ryver://botname@Organization/Token
-| [SendGrid](https://github.com/caronc/apprise/wiki/Notify_sendgrid) | sendgrid://  | (TCP) 443   | sendgrid://APIToken:FromEmail/<br />sendgrid://APIToken:FromEmail/ToEmail<br />sendgrid://APIToken:FromEmail/ToEmail1/ToEmail2/ToEmailN/
-| [ServerChan](https://github.com/caronc/apprise/wiki/Notify_serverchan) | serverchan://   | (TCP) 443    | serverchan://token/
-| [SimplePush](https://github.com/caronc/apprise/wiki/Notify_simplepush) | spush://   | (TCP) 443    | spush://apikey<br />spush://salt:password@apikey<br />spush://apikey?event=Apprise
-| [Slack](https://github.com/caronc/apprise/wiki/Notify_slack) | slack://  | (TCP) 443   | slack://TokenA/TokenB/TokenC/<br />slack://TokenA/TokenB/TokenC/Channel<br />slack://botname@TokenA/TokenB/TokenC/Channel<br />slack://user@TokenA/TokenB/TokenC/Channel1/Channel2/ChannelN
-| [SMTP2Go](https://github.com/caronc/apprise/wiki/Notify_smtp2go) | smtp2go:// | (TCP) 443 | smtp2go://user@hostname/apikey<br />smtp2go://user@hostname/apikey/email<br />smtp2go://user@hostname/apikey/email1/email2/emailN<br />smtp2go://user@hostname/apikey/?name="From%20User"
-| [Streamlabs](https://github.com/caronc/apprise/wiki/Notify_streamlabs) | strmlabs:// | (TCP) 443 | strmlabs://AccessToken/<br/>strmlabs://AccessToken/?name=name&identifier=identifier&amount=0&currency=USD
-| [SparkPost](https://github.com/caronc/apprise/wiki/Notify_sparkpost) | sparkpost:// | (TCP) 443 | sparkpost://user@hostname/apikey<br />sparkpost://user@hostname/apikey/email<br />sparkpost://user@hostname/apikey/email1/email2/emailN<br />sparkpost://user@hostname/apikey/?name="From%20User"
-| [Spontit](https://github.com/caronc/apprise/wiki/Notify_spontit) | spontit://  | (TCP) 443   | spontit://UserID@APIKey/<br />spontit://UserID@APIKey/Channel<br />spontit://UserID@APIKey/Channel1/Channel2/ChannelN
-| [Syslog](https://github.com/caronc/apprise/wiki/Notify_syslog) | syslog://  | (UDP) 514 (_if hostname specified_) | syslog://<br />syslog://Facility<br />syslog://hostname<br />syslog://hostname/Facility
-| [Telegram](https://github.com/caronc/apprise/wiki/Notify_telegram) | tgram://  | (TCP) 443   | tgram://bottoken/ChatID<br />tgram://bottoken/ChatID1/ChatID2/ChatIDN
-| [Twitter](https://github.com/caronc/apprise/wiki/Notify_twitter) | twitter://  | (TCP) 443   | twitter://CKey/CSecret/AKey/ASecret<br/>twitter://user@CKey/CSecret/AKey/ASecret<br/>twitter://CKey/CSecret/AKey/ASecret/User1/User2/User2<br/>twitter://CKey/CSecret/AKey/ASecret?mode=tweet
-| [Twist](https://github.com/caronc/apprise/wiki/Notify_twist) | twist://  | (TCP) 443   | twist://pasword:login<br/>twist://password:login/#channel<br/>twist://password:login/#team:channel<br/>twist://password:login/#team:channel1/channel2/#team3:channel
-| [XBMC](https://github.com/caronc/apprise/wiki/Notify_xbmc) | xbmc:// or xbmcs://    | (TCP) 8080 or 443   | xbmc://hostname<br />xbmc://user@hostname<br />xbmc://user:password@hostname:port
-| [XMPP](https://github.com/caronc/apprise/wiki/Notify_xmpp) | xmpp:// or xmpps://    | (TCP) 5222 or 5223   | xmpp://user:password@hostname<br />xmpps://user:password@hostname:port?jid=user@hostname/resource<br/>xmpps://user:password@hostname/target@myhost, target2@myhost/resource
-| [Webex Teams (Cisco)](https://github.com/caronc/apprise/wiki/Notify_wxteams) | wxteams://  | (TCP) 443   | wxteams://Token
-| [Zulip Chat](https://github.com/caronc/apprise/wiki/Notify_zulip) | zulip://  | (TCP) 443   | zulip://botname@Organization/Token<br />zulip://botname@Organization/Token/Stream<br />zulip://botname@Organization/Token/Email
+```mermaid
+flowchart TD
+    A[Start: load config/config.yaml<br/>and NOTIFIERS / SCHEDULES] --> B{Scheduled time?}
+    B -- no --> B
+    B -- yes --> C[For each kid in config]
+    C --> V{name, username and<br/>password all set?}
+    V -- no --> X[Log warning and<br/>stop this run]
+    V -- yes --> D[Start headless Chrome]
+    D --> E[Open myofek.cet.ac.il/he<br/>and click Login]
+    E --> F[Choose edu.gov.il SSO,<br/>switch to username/password login]
+    F --> G[Enter the kid's username and password]
+    G --> H[Read the four task counters<br/>from the dashboard]
+    H --> I{To do > 0 or<br/>to fix > 0?}
+    I -- yes --> J[Send Apprise notification]
+    I -- no --> K[Log: no tasks]
+    J --> L[Close browser]
+    K --> L
+    L --> C
+```
 
+The diagram shows the normal path. If a scrape fails, the error is logged and the previous
+counter values are kept. If no counter has been read since the bot started, the counter check
+raises an error that ends the run for all remaining kids (see
+[Known issues and limitations](#known-issues-and-limitations)).
+
+1. On startup the bot loads the kids list from `config/config.yaml` (relative to the working
+   directory, `/app` in the container). If the file does not exist, it copies the empty
+   template `config.yaml` there. The file is read **once**, so restart the bot after you
+   change it.
+2. It registers every Apprise URL from `NOTIFIERS` and one daily job for every time in
+   `SCHEDULES`.
+3. At each scheduled time, for every kid, it starts a fresh headless Chrome session
+   (incognito, `--no-sandbox`, `--disable-dev-shm-usage`), logs in to Ofek through the
+   edu.gov.il SSO, and reads the text of the four counters on the dashboard.
+4. It takes the first number in the "to do" and "to fix" counters. If either is greater than
+   zero, it sends a notification; otherwise it logs that there are no tasks.
+
+There is no stored state or de-duplication: as long as a kid has open tasks, you get a
+notification at **every** scheduled run.
+
+## Requirements
+
+- Docker (recommended), **or** Python 3 with Google Chrome installed locally.
+- Outbound internet access to `myofek.cet.ac.il`, the edu.gov.il login pages, and your
+  notification services. `webdriver-manager` also downloads a matching ChromeDriver at run
+  time, so it needs internet access too.
+- An Ofek (edu.gov.il) **username and password** for each kid. The bot uses the
+  username/password login, not the SMS login.
+- At least one [Apprise URL](https://github.com/caronc/apprise/wiki) for notifications.
 
 ## Installation
-Ofek-bot is a docker based application that can be installed using docker compose:
-```
-version: "3.6"
+
+### Docker Compose (recommended)
+
+```yaml
 services:
   ofek:
-    image: techblog/ofek-bot
+    image: techblog/ofek-bot:latest
     container_name: ofek
     restart: always
     environment:
-      - SCHEDULES=
-      - NOTIFIERS=
+      - SCHEDULES=16:00
+      - NOTIFIERS=tgram://<bot_token>/<chat_id>
     volumes:
       - ./ofek-bot/config:/app/config
 ```
 
-### Environment
-* SCHEDULES - Set checks schedules times splited with "," (14:00,15:30) - default is set to 16:00.
-* NOTIFIERS - List of [Supported Notifications](#Supported-Notifications)
+1. Create the config folder and the `config.yaml` file described in
+   [Configuration](#configuration):
+   ```bash
+   mkdir -p ofek-bot/config
+   nano ofek-bot/config/config.yaml
+   ```
+2. Start the container:
+   ```bash
+   docker compose up -d
+   docker compose logs -f ofek
+   ```
 
+### Docker
 
-### Volumes
-Ofek-bot is using the kids login credentials to the ofek website.
-In the config folder there is a config.yaml files for saving the credentials.
-Make sure to create the config file in the following structure:
-
+```bash
+docker run -d --name ofek --restart always \
+  -e SCHEDULES="07:30,16:00" \
+  -e NOTIFIERS="tgram://<bot_token>/<chat_id>" \
+  -v "$(pwd)/ofek-bot/config:/app/config" \
+  techblog/ofek-bot:latest
 ```
+
+### Published images
+
+Images are published to Docker Hub as
+[`techblog/ofek-bot`](https://hub.docker.com/r/techblog/ofek-bot) for `linux/amd64` only.
+The tags are `latest` and the version from the [`VERSION`](VERSION) file. There are no GitHub
+Releases.
+
+> [!NOTE]
+> At the time of writing, the newest tag on Docker Hub is `3.2.1` (September 2024), which is
+> also `latest`. The current `VERSION` file says `3.3.1`, and the Dockerfile on `main` (based
+> on `selenium/standalone-chrome`) has not been published yet. Until a new image is built,
+> `latest` is built from an older Dockerfile. <!-- TODO: verify after the next image build -->
+
+### From source
+
+```bash
+git clone https://github.com/t0mer/ofek-bot.git
+cd ofek-bot
+pip3 install -r requirements.txt
+
+cd app                           # the bot reads config/config.yaml relative to this folder
+mkdir -p config
+cp config.yaml config/config.yaml
+nano config/config.yaml          # add your kids
+
+export NOTIFIERS="tgram://<bot_token>/<chat_id>"   # must be set, even to ""
+export SCHEDULES="16:00"
+python3 app.py
+```
+
+Google Chrome must be installed; `webdriver-manager` downloads the matching ChromeDriver.
+
+## Configuration
+
+Configuration comes from two environment variables and one YAML file. There are no command
+line flags.
+
+### Environment variables
+
+| Variable | Required | Default | Description |
+| -------- | -------- | ------- | ----------- |
+| `NOTIFIERS` | Yes, to get notifications | `""` in the Docker image; unset outside Docker | One or more [Apprise URLs](#notifications), separated by **spaces**. If empty, the bot still checks Ofek but sends nothing. Outside Docker it must be set (even to an empty string), or the bot exits on startup. |
+| `SCHEDULES` | No | `16:00` | Daily run times in 24-hour `HH:MM` format, separated by commas **without spaces**, for example `07:30,16:00`. Times use the container's local time zone. |
+| `TZ` | No | `UTC` (from the `selenium/standalone-chrome` base image) | Time zone for `SCHEDULES`, for example `Asia/Jerusalem`. The `selenium/standalone-chrome` base image supports it; the bot itself does not read it. |
+
+### `config/config.yaml`
+
+The kids list is stored in `/app/config/config.yaml` inside the container. Mount a host folder
+to `/app/config` so the file survives container updates.
+
+| Key | Required | Description |
+| --- | -------- | ----------- |
+| `kids` | Yes | List of kids to check. |
+| `kids[].name` | Yes | Display name. Used in the notification title and the logs only. |
+| `kids[].username` | Yes | The kid's edu.gov.il username (usually the ID number). Numbers are converted to strings. |
+| `kids[].password` | Yes | The kid's edu.gov.il password. |
+
+Example:
+
+```yaml
 kids:
-  - name: 
-    username: 
-    password: 
+  - name: Kid1
+    username: "000000000"
+    password: "<password>"
 
-  - name: 
-    username: 
-    password: 
+  - name: Kid2
+    username: "000000000"
+    password: "<password>"
 ```
+
+Quote usernames with leading zeros (`"012345678"`), or YAML may misread them as numbers
+(including octal) and change the value.
+
+All three keys are required for every entry. When the bot reaches an entry with an empty
+`name`, `username`, or `password`, it logs `Kids list is empty or not configured` and **stops
+processing the rest of the list** for that run. Remove unused entries instead of leaving them
+blank.
+
+## Notifications
+
+Set `NOTIFIERS` to one or more Apprise URLs separated by spaces:
+
+```bash
+NOTIFIERS="tgram://<bot_token>/<chat_id> pover://<user_key>@<app_token>"
+```
+
+A few common examples (see the [Apprise wiki](https://github.com/caronc/apprise/wiki) for the
+full, current list of services and URL formats):
+
+| Service | Example URL |
+| ------- | ----------- |
+| [Telegram](https://github.com/caronc/apprise/wiki/Notify_telegram) | `tgram://bottoken/ChatID` |
+| [Discord](https://github.com/caronc/apprise/wiki/Notify_discord) | `discord://webhook_id/webhook_token` |
+| [Slack](https://github.com/caronc/apprise/wiki/Notify_slack) | `slack://TokenA/TokenB/TokenC/Channel` |
+| [Pushover](https://github.com/caronc/apprise/wiki/Notify_pushover) | `pover://user@token` |
+| [Gotify](https://github.com/caronc/apprise/wiki/Notify_gotify) | `gotifys://hostname/token` |
+| [ntfy](https://github.com/caronc/apprise/wiki/Notify_ntfy) | `ntfys://hostname/topic` |
+| [Home Assistant](https://github.com/caronc/apprise/wiki/Notify_homeassistant) | `hassio://hostname/accesstoken` |
+| [Microsoft Teams](https://github.com/caronc/apprise/wiki/Notify_msteams) | `msteams://TokenA/TokenB/TokenC/` |
+| [MQTT](https://github.com/caronc/apprise/wiki/Notify_mqtt) | `mqtt://user:pass@hostname/topic` |
+| [Email](https://github.com/caronc/apprise/wiki/Notify_email) | `mailtos://user:password@gmail.com` |
+| [Apprise API](https://github.com/caronc/apprise/wiki/Notify_apprise_api) | `apprises://hostname/Token` |
+
+### Message format
+
+A notification is sent per kid, only when the "to do" or "to fix" counter is above zero.
+
+- **Title:** `מצב משימות אופק של <name>` ("Ofek task status of &lt;name&gt;").
+- **Body:** the text of the four dashboard counters exactly as Ofek shows them (in Hebrew),
+  one per line, in this order: to do, to fix, checked, waiting.
+
+## Logging
+
+The bot logs to standard error with Loguru's default format at `DEBUG` level. The level is
+not configurable. View the logs with `docker logs -f ofek`.
+
+Useful messages: `Loading kids list`, `Getting tasks for: <name>`, `Scrapping...`,
+`No tasks tbd for <name>`, `Setting default schedule to 16:00` (when `SCHEDULES` is empty),
+and `Setting schedule to everyday at <time>`.
+
+## Troubleshooting
+
+- **Nothing happens after startup.** The bot waits for the next scheduled time. Check the
+  `Setting default schedule to 16:00` or `Setting schedule to everyday at <time>` lines in
+  the log and the container's time zone (see `TZ`).
+- **The container exits at startup with a schedule error.** Each `SCHEDULES` entry must be a
+  valid `HH:MM` time, separated by commas without spaces (`07:30,16:00`, not `07:30, 16:00`).
+- **No notifications arrive.** Check that `NOTIFIERS` is set, that multiple URLs are separated
+  by spaces (not commas), and that the log shows an `Adding: ...` line for each URL. Test each
+  URL with the `apprise` CLI.
+- **`Kids list is empty or not configured`.** An entry in `config.yaml` has an empty `name`,
+  `username`, or `password`. The bot stops at the first such entry.
+- **`config.yaml` is not created in the mounted folder.** The container runs as the
+  non-root `seluser`. Create `config/config.yaml` yourself, or make the host folder writable
+  by that user.
+- **Timeout or "no such element" errors while logging in or scraping.** The bot uses fixed
+  XPaths and a 5-second wait for each step. If Ofek or the edu.gov.il login page changes its
+  layout, these break and the code needs an update. Also check that the credentials work with
+  the username/password login in a normal browser.
+- **ChromeDriver download errors.** `webdriver-manager` checks for and, when not cached, downloads
+  ChromeDriver on each run (the cache is lost when the container is recreated), so it needs
+  internet access.
+
+## Security and privacy
+
+- `config.yaml` holds your kids' **Ministry of Education credentials in plain text**. Keep it
+  out of version control, restrict its permissions (for example `chmod 600`), and store it
+  only on a host you trust.
+- Apprise URLs usually contain API tokens. Treat `NOTIFIERS` as a secret: don't commit your
+  compose file with real values; use an `.env` file or your orchestrator's secret store.
+- At the default `DEBUG` log level the bot logs every Apprise URL it registers
+  (`Adding: <url>`) and the kids' names. Protect the container logs accordingly.
+- Notifications include your kid's name and task counts. Choose a private notification
+  channel.
+- The container runs Chrome as the non-root `seluser` with `--no-sandbox`. Don't expose it
+  more than needed; the bot does not listen on any port.
+
+## Known issues and limitations
+
+- **Repeated alerts:** there is no state or de-duplication, so you get a notification at every
+  scheduled run for as long as tasks are open.
+- **Fragile scraping:** the scraper relies on absolute XPaths, fixed element ids and a
+  hard-coded SSO URL rewrite (`EduCombinedAuthSms` to `EduCombinedAuthUidPwd`), so any change
+  to the Ofek website or the edu.gov.il login can break the bot.
+- **An empty entry stops the run:** an incomplete kid entry ends the run for the entries that
+  follow it.
+- **Stale counters after a failed scrape:** the counter values are not reset between kids. If
+  scraping fails for a kid, the previous kid's values are kept and reported under the current
+  kid's name.
+- **A scrape failure can end the run:** if no counter has been read since the bot started, an
+  `IndexError` ends the run for all remaining kids and leaves Chrome running, because
+  `browser.quit()` is skipped.
+- **Configuration is read once** at startup; restart the container after editing
+  `config.yaml`.
+- Images are built for `linux/amd64` only.
+
+## Development
+
+Project layout:
+
+```
+app/
+  app.py         # the bot: scheduler, Selenium crawler, Apprise notifications
+  config.yaml    # empty kids template, copied to config/config.yaml on first run
+Dockerfile       # based on selenium/standalone-chrome; runs as seluser
+requirements.txt # Python dependencies
+VERSION          # image version tag used by the Docker workflow
+.github/workflows/docker-image.yml
+```
+
+Run locally as described in [From source](#from-source). To build the image yourself:
+
+```bash
+docker build -t ofek-bot:dev .
+docker run --rm -e NOTIFIERS="" -e SCHEDULES="16:00" \
+  -v "$(pwd)/config:/app/config" ofek-bot:dev
+```
+
+The Dockerfile uses `selenium/standalone-chrome` as a base only to get Chrome; the entrypoint
+is replaced with `python3 /app/app.py`, so no Selenium Grid server runs in the container.
+
+The `docker` GitHub Actions workflow is started manually (`workflow_dispatch`). It builds for
+`linux/amd64` and pushes `techblog/ofek-bot:latest` and `techblog/ofek-bot:<VERSION>`. Bump
+`VERSION` before running it.
+
+There are no automated tests.
+
+## Contributing
+
+Issues and pull requests are welcome. Since the bot depends on the Ofek website's layout,
+reports about login or scraping failures (with the relevant log lines, **without**
+credentials or personal data) are especially helpful.
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
